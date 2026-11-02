@@ -1,0 +1,16 @@
+[project]
+name = "dr-backup-verifier"
+version = "1.0.0"
+description = "Автоматическое тестирование резервных копий БД восстановлением в изолированном контейнере"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+dr-verify = "verifier.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["verifier"]

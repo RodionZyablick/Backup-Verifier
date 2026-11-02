@@ -1,0 +1,26 @@
+[project]
+name = "demo"
+backup_dir = "../backups"
+reports_dir = "../reports"
+retention_keep = 5
+
+[source]
+type = "postgres"
+container = "dr_demo_source"
+user = "app"
+database = "shop"
+
+[verify]
+image = "postgres:16-alpine"
+memory = "512m"
+rto_target_sec = 300
+
+[[verify.custom_checks]]
+name = "users не пустая"
+sql = "SELECT count(*) FROM users"
+expect_min = 1
+
+[[verify.custom_checks]]
+name = "нет заказов-сирот"
+sql = "SELECT count(*) FROM orders o LEFT JOIN users u ON u.id = o.user_id WHERE u.id IS NULL"
+expect_equals = 0

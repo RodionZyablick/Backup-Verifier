@@ -1,0 +1,50 @@
+# Скопируйте в config.toml и поправьте под свою БД. Пути — относительно этого файла.
+
+[project]
+name = "myapp"
+backup_dir = "./backups"
+reports_dir = "./reports"
+retention_keep = 7          # сколько последних бэкапов хранить (последний проверенный не удаляется никогда)
+dump_timeout_sec = 3600
+
+[source]
+type = "postgres"           # postgres | mysql
+database = "shop"
+user = "app"
+# Вариант A: дамп внутри работающего контейнера (docker exec)
+container = "my_prod_db"
+# Вариант B: pg_dump/mysqldump на хосте (закомментируйте container)
+# host = "db.internal"
+# port = 5432
+password_env = "SOURCE_DB_PASSWORD"   # ИМЯ переменной окружения; сам пароль в конфиг не пишем
+
+[verify]
+# image = "postgres:16-alpine"   # по умолчанию — образ драйвера; ставьте ту же мажорную версию, что на проде
+pull_if_missing = true
+startup_timeout_sec = 180
+restore_timeout_sec = 3600
+memory = "1g"
+cpus = "1.0"
+use_tmpfs = false           # true — данные теста в RAM (быстро, но memory должна вмещать всю БД)
+tmpfs_size = "2g"
+row_count_tolerance_percent = 0.0   # допуск, если в источник пишут во время дампа
+row_count_tolerance_abs = 0
+# rto_target_sec = 900      # проверка провалится, если восстановление дольше
+# rpo_target_hours = 24     # проверка провалится, если бэкап старше
+
+# Любые бизнес-проверки: SQL должен вернуть одно значение
+[[verify.custom_checks]]
+name = "таблица users не пустая"
+sql = "SELECT count(*) FROM users"
+expect_min = 1
+
+[[verify.custom_checks]]
+name = "нет заказов-сирот"
+sql = "SELECT count(*) FROM orders o LEFT JOIN users u ON u.id = o.user_id WHERE u.id IS NULL"
+expect_equals = 0
+
+[notify]
+# webhook_url_env = "DR_WEBHOOK_URL"
+# telegram_token_env = "DR_TG_TOKEN"
+# telegram_chat_id_env = "DR_TG_CHAT"
+on_success = false          # слать уведомление только при провале
